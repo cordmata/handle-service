@@ -6,15 +6,14 @@ import java.io.FileInputStream;
 import java.security.PrivateKey;
 
 import org.apache.commons.io.IOUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.Logger;
 
 import net.handle.hdllib.PublicKeyAuthenticationInfo;
 import net.handle.hdllib.Util;
 
 public class HandleAuthProvider {
 	
-	private static final Logger log = LoggerFactory.getLogger(HandleAuthProvider.class);
+	private static final Logger log = Logger.getLogger(HandleAuthProvider.class);
 	
 	private File privateKey;
 	private String passphrase;

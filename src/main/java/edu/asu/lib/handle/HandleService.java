@@ -7,14 +7,12 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.log4j.Logger;
 
 import net.handle.hdllib.AbstractMessage;
 import net.handle.hdllib.AbstractResponse;
@@ -30,18 +28,17 @@ import net.handle.hdllib.ResolutionRequest;
 import net.handle.hdllib.ResolutionResponse;
 import net.handle.hdllib.Util;
 
-@Path("/handleservice/{handle}")
+@Path("/handleservice")
 public class HandleService {
 
-	private static final Logger log = LoggerFactory
-			.getLogger(HandleService.class);
+	private static final Logger log = Logger.getLogger(HandleService.class);
 	private static final byte[] HS_ADMIN_TYPE = Util.encodeString("HS_ADMIN");
 	private static final byte[] URL_TYPE = Util.encodeString("URL");
 
 	private HandleAuthProvider authProvider;
 
 	@GET
-	public Response readHandle(@PathParam("handle") String handle) {
+	public Response readHandle(@QueryParam("handle") String handle) {
 		
 		log.debug("starting GET");
 		String errorMsg = "Issue resolving handle: " + handle;
@@ -84,7 +81,7 @@ public class HandleService {
 	}
 
 	@POST
-	public Response createHandle(@PathParam("handle") String handle,
+	public Response createHandle(@QueryParam("handle") String handle,
 			@QueryParam("target") URI target) {
 
 		log.debug("Starting HTTP POST.");
@@ -168,7 +165,7 @@ public class HandleService {
 	}
 
 	@PUT
-	public Response updateHandle(@PathParam("handle") String handle,
+	public Response updateHandle(@QueryParam("handle") String handle,
 			@QueryParam("target") URI target) {
 
 		log.debug("Starting HTTP PUT.");
@@ -240,7 +237,7 @@ public class HandleService {
 	}
 
 	@DELETE
-	public Response deleteHandle(@PathParam("handle") String handle) {
+	public Response deleteHandle(@QueryParam("handle") String handle) {
 		
 		log.debug("Starting DELETE.");
 		String errorMsg = "Error deleting handle: " + handle;
@@ -257,7 +254,7 @@ public class HandleService {
 		}
 
 		if (resp.responseCode != AbstractMessage.RC_SUCCESS
-				|| resp.responseCode != AbstractMessage.RC_HANDLE_NOT_FOUND) {
+				&& resp.responseCode != AbstractMessage.RC_HANDLE_NOT_FOUND) {
 			String mess = AbstractMessage
 					.getResponseCodeMessage(resp.responseCode);
 			log.error(errorMsg + ". Response code: " + mess);
