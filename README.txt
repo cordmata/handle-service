@@ -1,10 +1,10 @@
-This is a description of the REST-style Handle administration interface for 
+This is a description of the REST-style Handle administration service for 
 the CNRI Handle Server.
 
-C L I E N T   I N T E R F A C E
+S E R V I C E  I N T E R F A C E
 ---------------------------------
 
-Clients that wish to make use of this interface will interact via HTTP. HTTP 
+Clients that wish to make use of this service will interact via HTTP. HTTP 
 methods are mapped to the Handle Server's administrative actions in the 
 following manner:
 
@@ -13,130 +13,115 @@ following manner:
     PUT     -> Update
     DELETE  -> Delete
 
-URL's used to communicate with the service are constructed as follows:
+The URL represents a handle as a "Resource" as commonly defined by REST; 
+that is, the URL is a "Resource Identifier". URL's used to communicate with 
+the service are constructed as follows:
 
-Given the complete RESOURCE IDENTIFIER:
-    http://base.url/handle-admin/handle/10111/2212
+* Given the handle 2286/asulib:1007: 
+	
+	* the Resource Identifier URL is: http://base.url/handle-admin/services/handle/2286%2Fasulib:1007
 
-    The BASE URL of the service is - http://base.url/handle-admin/
+    * The BASE URL of the service is - http://base.url/handle-admin/services
 
-    The RESOURCE TYPE IDENTIFIER is - handle/
-
-    The HANDLE is - 10111/2212
+    * The RESOURCE TYPE IDENTIFIER is - handle
+    
+    * The HANDLE is - 2206%2Fasulib:1007
+    
+    	* It is a good idea to encode any special characters in this portion of 
+    	the path -- even the "/" separator. Handles not using special 
+    	characters may work un-encoded but no guarantee is made.
 
 P O S T  /  C R E A T E 
 -------------------------
 
-Create a new handle and return it in the Location header of the response. While 
-you are not required to provide parameters, it is suggested that "url" or "file"
-parameters be supplied with a valid URI (an error will result if the URI 
-supplied is malformed). Providing no parameters will produce a HS_ADMIN admin 
-record.
+Create a new handle with the supplied target URI.
 
 Example:
-http://some.server.edu/handle-admin/handle/10111/2212?url=http://foo.bar.com/sometarget.html
+http://base.url/handle-admin/services/handle/2286%2F2212?target=http://foo.bar.com/sometarget.html
 	
-        Parameters:
-		url=valid URI - OPTIONAL
-		file=valid URI - OPTIONAL
-                email=Email address - OPTIONAL
-                desc=Description - OPTIONAL
+	Parameters:
+		* target - REQUIRED 
 
-	Error Response Codes:
-		400 Bad Request: 
-                    The supplied target is a Malformed URI.
-		401 Unauthorized: 
-                    Passphrase was not supplied or was wrong (see 
-                    Authentication). Various messages from Handle system.
-		502 Bad Gateway:
-                    Various messages from Handle system.
-	
 	Success Response Code:
 		201 Created:
-                    Location header will contain the created handle.
+			Location header will contain a URL pointing to the main handle 
+			proxy server for the created handle.
+		
+	Error Response Codes:
+		400 Bad Request:
+			The supplied target is a Malformed URI.
+		401 Unauthorized:
+	    	Indicates issue with the supplied private key.
+		500 Server Error:
 
 G E T  /  R E T R I E V E
 ---------------------------
 
-Return info about the supplied handle in XML.
+Return the target of the supplied handle in the "location" header.
 
-http://some.server.edu/handle-admin/handle/10111/2212
+http://some.server.edu/handle-admin/services/handle/10111%2F2212
 
         Parameters:
-                NONE
+            NONE
+            
+        Success Response Code:
+        	204 No Content:
+        		The target URL of the supplied handle will be in the "location"
+        		header. 
 
         Error Response Codes:
-		404 Not Found: 
-                    The supplied Handle is not found.
+			404 Not Found: 
+				The supplied Handle is not found.
+			401 Unauthorized:
+		    	Indicates issue with the supplied private key.
+			500 Server Error:
 
-        Success Response:
-                XML containing the Handle values.
 
 P U T  /  U P D A T E
 -----------------------
 
-Modify the supplied handle. The value supplied to the handle's type-value 
-parameter will overwrite the corresponding handle's type-value. If the 
-type-value supplied does not exist in the requested handle then no action will 
-be taken and the Handle will remain unchanged. If you need to add or remove 
-handle-values which are not pre-existing then you should delete the handle and 
-recreate it with the additional or removed handle values. 
+Modify the supplied handle's URL target. 
 
-http://some.server.edu/handle-admin/handle/10111/2212?url=http://foo.bar.com/sometarget.html?email=hdladmin@uiuc.edu
+http://some.server.edu/handle-admin/handle/10111%2F2212?target=http://foo.bar.com/sometarget.html
 
-        Parameters:
-		url=valid URI - OPTIONAL
-		file=valid URI - OPTIONAL
-                email=Email address - OPTIONAL
-                desc=Description - OPTIONAL
+	Parameters:
+		* target - valid URI - REQUIRED
 
-        Error Response Codes:
-		400 Bad Request: 
-                    The supplied target is a Malformed URI.
-		401 Unauthorized: 
-                    Passphrase was not supplied or was wrong (see 
-                    Authentication). Various messages from Handle system.
-		502 Bad Gateway:
-                    Various messages from Handle system.
-	
 	Success Response Code:
 		204 No Content:
-                    Handle was updated successfully.
+        	Handle was updated successfully.
+        	
+	Error Response Codes:
+		400 Bad Request:
+			The supplied target is a Malformed URI.
+		401 Unauthorized:
+	    	Indicates issue with the supplied private key.
+		500 Server Error:
 
 D E L E T E
 -------------
 
 Delete the supplied handle.
 
-http://some.server.edu/handle-admin/handle/10111/2212
-        Parameters:
-                NONE
+http://some.server.edu/handle-admin/services/handle/10111%2F2212
 
-        Error Response Codes:
+	Parameters:
+    	NONE
+	
+	Success Response:
+    	204 No Content:
+        	Handle was deleted successfully or did not exist.
+                  
+	Error Response Codes:
 		401 Unauthorized:
-                    Passphrase was not supplied or was wrong (see 
-                    Authentication). Various messages from Handle system.
-		502 Bad Gateway:
-                    Various messages from Handle system.
-
-        Success Response:
-                204 No Content:
-                    Handle was deleted successfully.
+	    	Indicates issue with the supplied private key.
+		500 Server Error:
 
 A U T H E N T I C A T I O N
 ------------------------------
 
-Authentication information should supplied in the Authorization header and 
-follows HTTP conventions. The format is:
-
-username:base-64-encoded-password
-
-Because the application is aware of the public-key of the handle service, the 
-username in this application will be ignored so any value can be supplied and it
-will be valid. The password that needs to be Base64 encoded and placed after 
-the colon(:) is the passphrase which corresponds to the Handle Server's 
-public/private key pair. More information can be found at 
-https://www-s2.library.uiuc.edu/bluestem-docs/handle/handle.html. 
-
-BASIC authorization is the only scheme currently supported (we can deploy on an 
-HTTPS server if needed).
+This service endpoint is protected by HTTP Basic Auth. This is controlled by 
+the Servlet container. A user should be created with the role handleAdmin in
+the container and the client should supply this user's credentials to gain 
+access to the service.
+  
