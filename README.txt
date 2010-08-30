@@ -17,7 +17,7 @@ The URL represents a handle as a "Resource" as commonly defined by REST;
 that is, the URL is a "Resource Identifier". URL's used to communicate with 
 the service are constructed as follows:
 
-* Given the handle 2286/asulib:1007: 
+Given the handle 2286/asulib:1007 
 	
 	* the Resource Identifier URL is: http://base.url/handle-admin/services/handle/2286%2Fasulib:1007
 
@@ -49,9 +49,9 @@ http://base.url/handle-admin/services/handle/2286%2F2212?target=http://foo.bar.c
 		
 	Error Response Codes:
 		400 Bad Request:
-			The supplied target is a Malformed URI.
-		401 Unauthorized:
-	    	Indicates issue with the supplied private key.
+			Handle was not supplied or the supplied target is a Malformed URI.
+		409 Conflict:
+			Handle already exists. 
 		500 Server Error:
 
 G E T  /  R E T R I E V E
@@ -67,35 +67,40 @@ http://some.server.edu/handle-admin/services/handle/10111%2F2212
         Success Response Code:
         	204 No Content:
         		The target URL of the supplied handle will be in the "location"
-        		header. 
+        		header. If the handle exists but no URL is associated with it, 
+        		e.g. it is an EMAIL type or an Admin handle, the value will be
+        		"NO_URL".
 
         Error Response Codes:
+	        400 Bad Request:
+				Handle was not supplied or the supplied target is a Malformed URI.
 			404 Not Found: 
 				The supplied Handle is not found.
-			401 Unauthorized:
-		    	Indicates issue with the supplied private key.
 			500 Server Error:
 
 
 P U T  /  U P D A T E
 -----------------------
 
-Modify the supplied handle's URL target. 
+Modify the supplied handle's URL target or create it if it does not exist. The
+global handle proxy URL will be returned in the "location" header. 
 
 http://some.server.edu/handle-admin/handle/10111%2F2212?target=http://foo.bar.com/sometarget.html
 
 	Parameters:
 		* target - valid URI - REQUIRED
+		* create - "true" | "false" - OPTIONAL (default "false")
 
 	Success Response Code:
-		204 No Content:
+		201 Created:
+        	Handle was not found so one was created. Only if the create 
+        	parameter was passed as "true".
+        204 No Content:
         	Handle was updated successfully.
         	
 	Error Response Codes:
 		400 Bad Request:
 			The supplied target is a Malformed URI.
-		401 Unauthorized:
-	    	Indicates issue with the supplied private key.
 		500 Server Error:
 
 D E L E T E
@@ -113,8 +118,6 @@ http://some.server.edu/handle-admin/services/handle/10111%2F2212
         	Handle was deleted successfully or did not exist.
                   
 	Error Response Codes:
-		401 Unauthorized:
-	    	Indicates issue with the supplied private key.
 		500 Server Error:
 
 A U T H E N T I C A T I O N

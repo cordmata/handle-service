@@ -1,8 +1,14 @@
 package edu.asu.lib.handle;
 
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -37,6 +43,7 @@ import net.handle.hdllib.Util;
 public class HandleService {
 
 	private static final Logger log = Logger.getLogger(HandleService.class);
+	private static final URI HANDLE_REGISTRY = UriBuilder.fromUri("http://hdl.handle.net/").build();
 	private static final byte[] HS_ADMIN_TYPE = Util.encodeString("HS_ADMIN");
 	private static final byte[] URL_TYPE = Util.encodeString("URL");
 	private static final String UNAUTH_MSG = "Authentication failure on Handle " +
@@ -59,6 +66,7 @@ public class HandleService {
 		String errorMsg = "Issue resolving handle: " + handle + "\n";
 		ResolutionRequest req = new ResolutionRequest(
 				Util.encodeString(handle), null, null, null);
+		req.authoritative = true;
 		AbstractResponse resp = processRequest(req);
 		errorMsg += AbstractMessage.getResponseCodeMessage(resp.responseCode);
 		
@@ -71,29 +79,34 @@ public class HandleService {
 				log.error(errorMsg + ". Error getting handle values.", e);
 				return Response.serverError().build();
 			}
+			URI targetUri = null;
 			for (HandleValue val : values) {
 				String type = val.getTypeAsString();
 				if ("URL".equalsIgnoreCase(type)) {
 					String target = val.getDataAsString();
-					URI targetUri = UriBuilder.fromUri(target).build();
-					return Response.noContent().location(targetUri).build();
+					targetUri = UriBuilder.fromUri(target).build();
 				}
 			}
-			return Response.status(Status.NOT_FOUND).build();
+			if (targetUri == null) {
+				targetUri = UriBuilder.fromUri("NO_URL").build();
+			}
+			return Response.noContent().location(targetUri).build();
 		}
 		return returnError(resp.responseCode, errorMsg);
 	}
 
 	@POST
-	public Response createHandle(@PathParam("handle") String handle,
-			@QueryParam("target") URI target) {
+	public Response createHandle(
+			@PathParam("handle") String handle,
+			@QueryParam("target") String target) {
 
 		log.debug("Starting HTTP POST.");
-		if (StringUtils.isBlank(handle) || target == null) { 
+		URL targetUrl = createUrl(target);
+		if (StringUtils.isBlank(handle) || targetUrl == null) { 
 			return Response.status(Status.BAD_REQUEST).build(); 
 		}
 		String errorMsg = "Error creating handle: " + handle +
-			" with target: " + target.toString() + "\n";
+			" with target: " + targetUrl.toString() + "\n";
 
 		// We don't want to create a handle without an admin value-- otherwise
 		// we would be locked out. Give ourselves all permissions, even
@@ -102,9 +115,7 @@ public class HandleService {
 				.getAuthHandle()), 300, true, true, true, true, true, true,
 				true, true, true, true, true, true);
 
-		// All handle values need a timestamp, so get the current time in
-		// seconds since the epoch
-		int timestamp = (int) (System.currentTimeMillis() / 1000);
+		int timestamp = getTimestamp();
 
 		/* 
 		 * The first argument is the value's index.
@@ -133,7 +144,7 @@ public class HandleService {
 						Encoder.encodeAdminRecord(admin),
 						HandleValue.TTL_TYPE_RELATIVE, 86400, timestamp, null,
 						true, true, true, false),
-				new HandleValue(101, URL_TYPE, Util.encodeString(target
+				new HandleValue(1, URL_TYPE, Util.encodeString(targetUrl
 						.toString()), HandleValue.TTL_TYPE_RELATIVE, 86400,
 						timestamp, null, true, true, true, false) 
 				};
@@ -144,73 +155,96 @@ public class HandleService {
 		AbstractResponse resp = processRequest(req);
 		errorMsg += AbstractMessage.getResponseCodeMessage(resp.responseCode) + "\n";
 		
+		if (resp.responseCode == AbstractMessage.RC_HANDLE_ALREADY_EXISTS) {
+			return Response.status(Status.CONFLICT).build();
+		}
+		
 		if (resp.responseCode != AbstractMessage.RC_SUCCESS) {
 			return returnError(resp.responseCode, errorMsg);
 		}
 		
-		UriBuilder locBuilder = UriBuilder.fromUri("http://hdl.handle.net/").path(handle);
+		UriBuilder locBuilder = UriBuilder.fromUri(HANDLE_REGISTRY).path(handle);
 		return Response.created(locBuilder.build()).build();
 		
 	}
 
 	@PUT
-	public Response updateHandle(@PathParam("handle") String handle,
-			@QueryParam("target") URI target) {
+	public Response updateHandle(
+			@PathParam("handle") String handle,
+			@QueryParam("target") String target, 
+			@QueryParam("create") @DefaultValue("false") Boolean createIfNotFound) {
 
 		log.debug("Starting HTTP PUT.");
 		
-		if (StringUtils.isBlank(handle) || target == null) { 
+		URL targetUrl =  createUrl(target);
+		if (StringUtils.isBlank(handle) || targetUrl == null) { 
 			return Response.status(Status.BAD_REQUEST).build(); 
 		}
 		
-		String errorMsg = "Issue updating handle: " + handle +
-			" to target: " + target.toString()+ "\n";
+		String errorMsg = "Problem updating handle: " + handle +
+			" to target: " + targetUrl.toString() + "\n";
 		
 		ResolutionRequest req = new ResolutionRequest(
 				Util.encodeString(handle), null, null, null);
-
+		req.authoritative = true;
 		AbstractResponse resp = processRequest(req);
 
 		errorMsg += "Resolution: " + 
 			AbstractMessage.getResponseCodeMessage(resp.responseCode) + "\n";
 		
-		
-		switch (resp.responseCode) {
-			case AbstractMessage.RC_HANDLE_NOT_FOUND:
-				return createHandle(handle, target);
-			case AbstractMessage.RC_SUCCESS:
-				ResolutionResponse rresp = (ResolutionResponse) resp;
-				HandleValue[] values;
-				try {
-					values = rresp.getHandleValues();
-				} catch (HandleException e) {
-					log.error(errorMsg + ". Error getting Handle values.", e);
-					return Response.serverError().build();
-				}
-
-				for (HandleValue val : values) {
-					// check to see if there is a value with type URL
-					if ("URL".equalsIgnoreCase(val.getTypeAsString())) {
-						val.setData(Util.encodeString(target.toString()));
-					}
-				}
-
-				ModifyValueRequest modreq = new ModifyValueRequest(rresp.handle,
-						values, authProvider.getAuthInfo());
-				AbstractResponse modresp = processRequest(modreq);
-				errorMsg += "Modification: " + 
-					AbstractMessage.getResponseCodeMessage(modresp.responseCode)
-					+ "\n";
-				
-				if (modresp.responseCode != AbstractMessage.RC_SUCCESS) {
-					return returnError(modresp.responseCode, errorMsg);
-				}
-				
-				return Response.noContent().build();
-				
-			default:
-				return returnError(resp.responseCode, errorMsg);
+		if (resp.responseCode == AbstractMessage.RC_HANDLE_NOT_FOUND && createIfNotFound) {
+			return createHandle(handle, target);
 		}
+		
+		if (resp.responseCode == AbstractMessage.RC_SUCCESS) {
+			ResolutionResponse rresp = (ResolutionResponse) resp;
+			HandleValue[] values;
+			try {
+				values = rresp.getHandleValues();
+			} catch (HandleException e) {
+				log.error(errorMsg + ". Error getting Handle values.", e);
+				return Response.serverError().build();
+			}
+
+			List<Integer> idxs = new ArrayList<Integer>();
+			boolean foundUrl = false;
+			for (HandleValue val : values) {
+				idxs.add(val.getIndex());
+				// check to see if there is a value with type URL
+				if ("URL".equalsIgnoreCase(val.getTypeAsString())) {
+					val.setData(Util.encodeString(targetUrl.toString()));
+					foundUrl = true;
+				}
+			}
+			
+			// If there was not an existing URL type then add one at a free index. 
+			if (!foundUrl) {
+				Integer idx = 1;
+				while (idxs.contains(idx)) idx++;
+				HandleValue newVal = new HandleValue(idx, URL_TYPE, 
+						Util.encodeString(targetUrl.toString()), 
+						HandleValue.TTL_TYPE_RELATIVE, 86400,
+						getTimestamp(), null, true, true, true, false);
+				List<HandleValue> valList = Arrays.asList(values);
+				valList.add(newVal);
+				values = (HandleValue[]) valList
+						.toArray(new HandleValue[valList.size()]);
+			}
+
+			ModifyValueRequest modreq = new ModifyValueRequest(rresp.handle,
+					values, authProvider.getAuthInfo());
+			AbstractResponse modresp = processRequest(modreq);
+			errorMsg += "Modification: " + 
+				AbstractMessage.getResponseCodeMessage(modresp.responseCode) + "\n";
+			
+			if (modresp.responseCode != AbstractMessage.RC_SUCCESS) {
+				return returnError(modresp.responseCode, errorMsg);
+			}
+			URI loc = UriBuilder.fromUri(HANDLE_REGISTRY).path(handle).build();
+			return Response.noContent().location(loc).build();
+		}
+		log.debug(errorMsg);
+		return returnError(resp.responseCode, errorMsg);
 
 	}
 
@@ -253,7 +287,6 @@ public class HandleService {
 			case AbstractMessage.RC_INSUFFICIENT_PERMISSIONS:
 			case AbstractMessage.RC_INVALID_CREDENTIAL:
 				log.error(UNAUTH_MSG);
-				return Response.status(Status.UNAUTHORIZED).build();
 			default:
 				ResponseBuilder r = Response.serverError();
 				if (StringUtils.isNotBlank(errorMsg)) {
@@ -262,6 +295,22 @@ public class HandleService {
 				}
 				return r.build();
 		}
+	}
+	
+	private URL createUrl(String urlString) {
+		URL url = null;
+		try {
+			url = new URL(urlString);
+		} catch (MalformedURLException e) {
+			log.warn("Supplied url is malformed: " + urlString);
+		}
+		return url;
+	}
+	
+	private int getTimestamp() {
+		// All handle values need a timestamp, so get the current time in
+		// seconds since the epoch
+		return (int) (System.currentTimeMillis() / 1000);
 	}
 	
 	public void setAuthProvider(HandleAuthProvider authProvider) {
