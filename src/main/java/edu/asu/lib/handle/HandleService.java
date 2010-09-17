@@ -7,8 +7,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
+import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -21,6 +23,7 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
 
+import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 
@@ -39,7 +42,7 @@ import net.handle.hdllib.ResolutionRequest;
 import net.handle.hdllib.ResolutionResponse;
 import net.handle.hdllib.Util;
 
-@Path("/handle/{handle:.*}")
+@Path("/{handle:.*}")
 public class HandleService {
 
 	private static final Logger log = Logger.getLogger(HandleService.class);
@@ -96,15 +99,30 @@ public class HandleService {
 	}
 
 	@POST
+	@Consumes("application/x-www-form-urlencoded")
 	public Response createHandle(
-			@PathParam("handle") String handle,
-			@QueryParam("target") String target) {
+			@FormParam("target") String target,
+			@FormParam("prefix") String prefix,
+			@FormParam("suffix") String suffix) {
 
 		log.debug("Starting HTTP POST.");
 		URL targetUrl = createUrl(target);
-		if (StringUtils.isBlank(handle) || targetUrl == null) { 
+		
+		// if no target URL was specified or 
+		if (targetUrl == null || 
+			(StringUtils.isBlank(prefix) && StringUtils.isBlank(suffix))) { 
 			return Response.status(Status.BAD_REQUEST).build(); 
 		}
+		
+		String handle;
+		boolean autogenHandle = false;
+		if (StringUtils.isBlank(suffix)) {
+			handle = generateHandle(prefix);
+			autogenHandle = true;
+		} else {
+			handle = prefix + "/" + suffix;
+		}
+		
 		String errorMsg = "Error creating handle: " + handle +
 			" with target: " + targetUrl.toString() + "\n";
 
@@ -149,14 +167,17 @@ public class HandleService {
 						timestamp, null, true, true, true, false) 
 				};
 
-		CreateHandleRequest req = new CreateHandleRequest(
-				Util.encodeString(handle), vals, authProvider.getAuthInfo());
-
-		AbstractResponse resp = processRequest(req);
+		AbstractResponse resp = createHandleRequest(handle, vals);
 		errorMsg += AbstractMessage.getResponseCodeMessage(resp.responseCode) + "\n";
 		
 		if (resp.responseCode == AbstractMessage.RC_HANDLE_ALREADY_EXISTS) {
-			return Response.status(Status.CONFLICT).build();
+			if (autogenHandle) { // retry on conflict if we are creating a random unique handle
+				while (resp.responseCode == AbstractMessage.RC_HANDLE_ALREADY_EXISTS) {
+					resp = createHandleRequest(generateHandle(prefix), vals);
+				}
+			} else {
+				return Response.status(Status.CONFLICT).build();
+			}
 		}
 		
 		if (resp.responseCode != AbstractMessage.RC_SUCCESS) {
@@ -166,6 +187,12 @@ public class HandleService {
 		UriBuilder locBuilder = UriBuilder.fromUri(HANDLE_REGISTRY).path(handle);
 		return Response.created(locBuilder.build()).build();
 		
+	}
+	
+	private AbstractResponse createHandleRequest(String handle, HandleValue[] vals) {
+		CreateHandleRequest req = new CreateHandleRequest(
+				Util.encodeString(handle), vals, authProvider.getAuthInfo());
+		return processRequest(req);
 	}
 
 	@PUT
@@ -193,7 +220,10 @@ public class HandleService {
 			AbstractMessage.getResponseCodeMessage(resp.responseCode) + "\n";
 		
 		if (resp.responseCode == AbstractMessage.RC_HANDLE_NOT_FOUND && createIfNotFound) {
-			return createHandle(handle, target);
+			String[] parts = StringUtils.split( handle, "/", 2);
+			if (parts.length == 2) {
+				return createHandle(target, parts[0], parts[1]);
+			}
 		}
 		
 		if (resp.responseCode == AbstractMessage.RC_SUCCESS) {
@@ -311,6 +341,14 @@ public class HandleService {
 		// All handle values need a timestamp, so get the current time in
 		// seconds since the epoch
 		return (int) (System.currentTimeMillis() / 1000);
+	}
+	
+	private String generateHandle(String prefix) {
+		String str = RandomStringUtils.randomNumeric(2) + 
+			Long.toString(System.currentTimeMillis()) + 
+			RandomStringUtils.randomNumeric(2);
+		String suffix = Long.toString(Long.parseLong(str), 36);
+		return prefix + "/" + suffix;
 	}
 	
 	public void setAuthProvider(HandleAuthProvider authProvider) {

@@ -22,7 +22,7 @@
 		<property name="authProvider" ref="handleAuthProvider" />
 	</bean>
 	
-	<jaxrs:server id="handleServiceServer" address="/services">
+	<jaxrs:server id="handleServiceServer" address="/">
 		<jaxrs:serviceBeans>
 			<ref bean="handleService" />
 		</jaxrs:serviceBeans>

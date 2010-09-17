@@ -34,13 +34,18 @@ Given the handle 2286/asulib:1007
 P O S T  /  C R E A T E 
 -------------------------
 
-Create a new handle with the supplied target URI.
+Create a new handle with the supplied target URI. To create a specific handle,
+supply the handle prefix and suffix. If prefix is supplied as a parameter 
+with a blank suffix the service will generate a suffix.
 
 Example:
-http://base.url/handle-admin/services/handle/2286%2F2212?target=http://foo.bar.com/sometarget.html
+http://base.url/handle-admin/services/handle/ 
+POST-Paranms: target=http://foo.bar.com/sometarget.html&prefix=2286.0&suffix=44557
 	
 	Parameters:
-		* target - REQUIRED 
+		* target - REQUIRED
+		* prefix - REQUIRED
+		* suffix - OPTIONAL
 
 	Success Response Code:
 		201 Created:
@@ -85,7 +90,8 @@ P U T  /  U P D A T E
 Modify the supplied handle's URL target or create it if it does not exist. The
 global handle proxy URL will be returned in the "location" header. 
 
-http://some.server.edu/handle-admin/handle/10111%2F2212?target=http://foo.bar.com/sometarget.html
+http://some.server.edu/handle-admin/handle/10111%2F2212 
+PUT-Params: target=http://foo.bar.com/sometarget.html
 
 	Parameters:
 		* target - valid URI - REQUIRED
