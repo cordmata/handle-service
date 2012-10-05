@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:jaxrs="http://cxf.apache.org/jaxrs"
+  xmlns:context="http://www.springframework.org/schema/context"
+  xmlns:sec="http://www.springframework.org/schema/security" 
+  xsi:schemaLocation="
+http://www.springframework.org/schema/beans 
+http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+http://www.springframework.org/schema/context 
+http://www.springframework.org/schema/context/spring-context-3.0.xsd
+http://www.springframework.org/schema/security 
+http://www.springframework.org/schema/security/spring-security-3.1.xsd
+http://cxf.apache.org/jaxrs
+http://cxf.apache.org/schemas/jaxrs.xsd">
+
+    <import resource="classpath:META-INF/cxf/cxf.xml" />
+    <context:property-placeholder/>
+    <context:annotation-config/>
+    <bean class="org.springframework.web.context.support.ServletContextPropertyPlaceholderConfigurer"/>
+    <bean class="org.springframework.beans.factory.config.PreferencesPlaceholderConfigurer"/>
+
+    <!--//////////////////////////////////////////////////////////////////////
+    //// 
+    //// Handle Service Configuration
+    //// 
+    ////////////////////////////////////////////////////////////////////////--> 
+    <bean id="cnriAdapter" class="edu.asu.lib.handle.CNRIGenericAdapterFactory" />
+
+    <bean id="privateKey" class="java.io.File">
+        <constructor-arg value="${handle.private.key}" />
+    </bean>
+        
+    <bean id="handleClient" class="edu.asu.lib.handle.HandleClientImpl">
+        <property name="serverAdapterFactory" ref="cnriAdapter" />
+        <property name="privateKey" ref="privateKey" />
+        <property name="passphrase" value="${handle.private.key.passphrase}" />
+        <property name="adminHandle" value="${handle.admin.handle}" />
+        <property name="keyIndex" value="${handle.key.index}" />
+    </bean>
+    
+    <bean id="handleService" class="edu.asu.lib.handle.HandleService">
+        <property name="handleClient" ref="handleClient" />
+    </bean>
+
+    <jaxrs:server id="handleServiceServer" address="/">
+        <jaxrs:serviceBeans>
+            <ref bean="handleService" />
+        </jaxrs:serviceBeans>
+    </jaxrs:server>
+   
+    <!--//////////////////////////////////////////////////////////////////////
+    //// 
+    //// Security Configuration 
+    //// 
+    ////////////////////////////////////////////////////////////////////////--> 
+    <sec:global-method-security pre-post-annotations="enabled" />
+   
+    <sec:http use-expressions="true">
+        <sec:intercept-url pattern="/**" access="isAuthenticated() and !isAnonymous()" />
+        <sec:http-basic />
+    </sec:http>
+    
+    <sec:authentication-manager>
+        <sec:authentication-provider user-service-ref="userDetailsService" />
+    </sec:authentication-manager>
+    
+    <bean id="userDetailsService" class="edu.asu.lib.handle.PropertiesUserDetailsService">
+        <constructor-arg>
+            <list>
+                <props>
+                    <prop key="username">${handleservice.admin.username}</prop>
+                    <prop key="password">${handleservice.admin.password}</prop>
+                    <prop key="isAdmin">true</prop>
+                </props>
+            </list>
+        </constructor-arg>
+    </bean>
+    
+</beans>

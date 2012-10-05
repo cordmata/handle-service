@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:jaxrs="http://cxf.apache.org/jaxrs"
+  xmlns:context="http://www.springframework.org/schema/context"
+  xmlns:sec="http://www.springframework.org/schema/security" 
+  xsi:schemaLocation="
+http://www.springframework.org/schema/beans 
+http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+http://www.springframework.org/schema/context 
+http://www.springframework.org/schema/context/spring-context-3.0.xsd
+http://www.springframework.org/schema/security 
+http://www.springframework.org/schema/security/spring-security-3.1.xsd
+http://cxf.apache.org/jaxrs
+http://cxf.apache.org/schemas/jaxrs.xsd">
+
+	<import resource="classpath:META-INF/cxf/cxf.xml" />
+    <context:property-placeholder/>
+    <context:annotation-config/>
+    <bean class="org.springframework.web.context.support.ServletContextPropertyPlaceholderConfigurer"/>
+    <bean class="org.springframework.beans.factory.config.PreferencesPlaceholderConfigurer"/>
+
+	<!--//////////////////////////////////////////////////////////////////////
+    //// 
+    //// Handle Service Configuration
+    //// 
+    ////////////////////////////////////////////////////////////////////////--> 
+    <bean id="stubClient" class="edu.asu.lib.handle.StubHandleClient"/>
+    <bean id="handleService" class="edu.asu.lib.handle.HandleService">
+        <property name="handleClient" ref="stubClient"/>
+    </bean>
+    
+    <jaxrs:server id="handleServiceServer" address="/">
+        <jaxrs:serviceBeans>
+            <ref bean="handleService" />
+        </jaxrs:serviceBeans>
+    </jaxrs:server>
+   
+    <!--//////////////////////////////////////////////////////////////////////
+    //// 
+    //// Security Configuration 
+    //// 
+    ////////////////////////////////////////////////////////////////////////--> 
+    <sec:global-method-security pre-post-annotations="enabled" />
+   
+    <sec:http use-expressions="true">
+        <sec:intercept-url pattern="/**" access="isAuthenticated() and !isAnonymous()" />
+        <sec:http-basic />
+    </sec:http>
+    
+    <sec:authentication-manager>
+        <sec:authentication-provider user-service-ref="userDetailsService" />
+    </sec:authentication-manager>
+    
+    <bean id="userDetailsService" class="edu.asu.lib.handle.PropertiesUserDetailsService">
+        <constructor-arg>
+            <list>
+	            <props>
+	                <prop key="username">handleAdmin</prop>
+	                <prop key="password">blah</prop>
+	                <prop key="isAdmin">true</prop>
+	            </props>
+	            <props>
+	                <prop key="username">johnny</prop>
+	                <prop key="password">jonboy</prop>
+	                <prop key="isAdmin">false</prop>
+	                <prop key="isEnabled">true</prop>
+	                <prop key="allowedPrefixes">1234.5,1234.0</prop>
+	                <prop key="allowedSuffixes">repo, fass</prop>
+	            </props>
+	            <props>
+	                <prop key="username">disabledUser</prop>
+	                <prop key="password">noaccess</prop>
+	                <prop key="isAdmin">false</prop>
+	                <prop key="isEnabled">false</prop>
+	            </props>
+	            <props>
+	                <prop key="username">suffixTest</prop>
+	                <prop key="password">blah</prop>
+	                <prop key="allowedPrefixes">1234.5</prop>
+	                <prop key="allowedSuffixes">*</prop>
+	            </props>
+	            <props>
+	                <prop key="username">prefixTest</prop>
+	                <prop key="password">blah</prop>
+	                <prop key="allowedPrefixes">*</prop>
+	                <prop key="allowedSuffixes">foo</prop>
+	            </props>
+	            <props>
+	                <prop key="username">blankTest</prop>
+	                <prop key="password">blah</prop>
+	                <prop key="allowedPrefixes">   </prop>
+	                <prop key="allowedSuffixes"></prop>
+	            </props>
+            </list>
+        </constructor-arg>
+    </bean>
+    
+</beans>
