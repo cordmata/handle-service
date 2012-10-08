@@ -117,7 +117,7 @@ public class User implements UserDetails {
     }
     
     public boolean canModifySuffix(String suffix) {
-    	String[] parts = suffix.split(":", 2);
+    	String[] parts = suffix.split("\\.", 2);
     	String ns = "";
     	if (parts.length == 2) ns = parts[0];
         return isAdmin 

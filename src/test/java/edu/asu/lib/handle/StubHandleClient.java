@@ -10,7 +10,7 @@ import net.handle.hdllib.HandleException;
  */
 public class StubHandleClient implements HandleClient {
     public static final String RESOLVE_URL = "http://example.com";
-    public static final String NOT_FOUND_HANDLE = "0000/foo:0";
+    public static final String NOT_FOUND_HANDLE = "0000/foo.0";
 
     /**
      * Error conditions are tested more comprehensively in the unit tests, 

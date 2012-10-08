@@ -56,42 +56,42 @@ public class HandleServiceIT extends Assert {
     @Test
     public void testUnauthorizedSuffix() throws Exception { 
         assertAllMethodsUnauthorized( 
-            createClient("johnny", "johnboy").path("/1234.5/nope:1"));
+            createClient("johnny", "johnboy").path("/1234.5/nope.1"));
     }
     
     @Test
     public void testUnauthorizedPrefix() throws Exception { 
         assertAllMethodsUnauthorized( 
-            createClient("johnny", "johnboy").path("/1234/repo:1"));
+            createClient("johnny", "johnboy").path("/1234/repo.1"));
     }
     
     @Test
     public void testWildcardPrefix() throws Exception { 
         WebClient client = createClient("prefixTest", "blah");
-        assertAllMethodsAuthorized(client.path("/1234.4/foo:1"));
-        assertAllMethodsAuthorized(client.replacePath("/1234.0/foo:1"));
-        assertModifyingMethodsForbidden(client.replacePath("/1234/repo:1"));
+        assertAllMethodsAuthorized(client.path("/1234.4/foo.1"));
+        assertAllMethodsAuthorized(client.replacePath("/1234.0/foo.1"));
+        assertModifyingMethodsForbidden(client.replacePath("/1234/repo.1"));
     }
     
     @Test
     public void testWildcardSuffix() throws Exception { 
         WebClient client = createClient("suffixTest", "blah");
-        assertAllMethodsAuthorized(client.path("/1234.5/repo:1"));
+        assertAllMethodsAuthorized(client.path("/1234.5/repo.1"));
         assertAllMethodsAuthorized(client.replacePath("/1234.5/anything"));
-        assertModifyingMethodsForbidden(client.replacePath("/1234.0/repo:1"));
+        assertModifyingMethodsForbidden(client.replacePath("/1234.0/repo.1"));
     }
     
     @Test
     public void testBlankEntries() throws Exception { 
         WebClient client = createClient("blankTest", "blah");
-        assertModifyingMethodsForbidden(client.path("/1234.0/repo:1"));
+        assertModifyingMethodsForbidden(client.path("/1234.0/repo.1"));
         assertModifyingMethodsForbidden(client.replacePath("/1234/any"));
     }
     
     @Test
     public void testAuthorizedNonAdminUser() throws Exception { 
         assertAllMethodsAuthorized( 
-            createClient("johnny", "jonboy").path("/1234.5/repo:1"));
+            createClient("johnny", "jonboy").path("/1234.5/repo.1"));
     }
     
     @Test

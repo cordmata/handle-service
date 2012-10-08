@@ -23,10 +23,10 @@ URL's used to communicate with the service are constructed as follows:
 
 	https://{service.location}/{prefix}/{suffix}
 
-Given a service location of `example.org/handle-service` and Handle `2286.1/asulib:1007`
+Given a service location of `example.org/handle-service` and Handle `2286.1/asulib.1007`
 the resource URL would be:
 
-	https://example.org/handle-service/2286.1/asulib%3a1007
+	https://example.org/handle-service/2286.1/asulib.1007
 
 **Notice:** It is a good idea to ensure that the suffix portion of the path is
 url encoded.
@@ -65,11 +65,11 @@ Then simply deploy the WAR to a Servlet container of your choice.
 This service can be configured to allow non-administrative users access. These users
 can be restricted to specified prefixes or suffix namespaces. If a user is restricted
 to specified suffix namespace, they may only administer Handles where the suffix starts
-with the specified namespace separated from the rest of the suffix by a colon.
+with the specified namespace separated from the rest of the suffix by a period.
 
 If user *benny* is restricted to prefix **1234.0** then he can only manage Handles that look
 like `1234.0/{suffix}`. Likewise, if he is restricted to suffix **ben** he can only
-create Handles that look like `1234.0/ben:{rest-of-suffix}`.
+create Handles that look like `1234.0/ben.{rest-of-suffix}`.
 
 Out of the box, users can be specified in the Spring context (`src/main/context/beans.xml`
 before packaging or `WEB-INF/classes/beans.xml` in the exploded WAR). To add a user, modify
@@ -143,7 +143,7 @@ the handle is an Admin or Email handle.
 
 Command
 
-    $ curl -i -X GET http://handleAdmin:somethingSuperSecret@some.server.edu/handle-service/1234/foo:1
+    $ curl -i -X GET http://handleAdmin:somethingSuperSecret@some.server.edu/handle-service/1234/foo.1
 
 Response
 
@@ -177,7 +177,7 @@ proxy server for the created handle.
 
 Command
 
-    $ curl -i -X POST -d "target=http%3A%2F%2Fexample.com" http://handleAdmin:somethingSuperSecret@some.server.edu/handle-service/1234/foo:1
+    $ curl -i -X POST -d "target=http%3A%2F%2Fexample.com" http://handleAdmin:somethingSuperSecret@some.server.edu/handle-service/1234/foo.1
 
 Response
 
@@ -214,7 +214,7 @@ global handle proxy URL will be returned in the "location" header.
 
 Command
 
-    $ curl -i -X PUT http://handleAdmin:somethingSuperSecret@some.server.edu/handle-service/1234/foo:1?target=http%3A%2F%2Fnew.example.com
+    $ curl -i -X PUT http://handleAdmin:somethingSuperSecret@some.server.edu/handle-service/1234/foo.1?target=http%3A%2F%2Fnew.example.com
 
 Response
 
@@ -242,7 +242,7 @@ Delete the supplied handle.
 
 Command
 
-    $ curl -i -X DELETE http://handleAdmin:somethingSuperSecret@some.server.edu/handle-service/1234/foo:1
+    $ curl -i -X DELETE http://handleAdmin:somethingSuperSecret@some.server.edu/handle-service/1234/foo.1
 
 Response
 
@@ -266,12 +266,7 @@ Existing libraries for interacting with this API.
 
 * Python: https://github.com/cordmata/handle-client
 
-You can also simply use cURL. Again, here are examples:
-
-    curl -i -X GET https://handleAdmin:somethingSuperSecret@your.service.edu/handle-service/2286/test:1
-    curl -i -X POST -d "target=http%3A%2F%2Fexample.com" https://handleAdmin:somethingSuperSecret@your.service.edu/handle-service/2286/test:1
-    curl -i -X PUT https://handleAdmin:somethingSuperSecret@your.service.edu/handle-service/2286/test:1?target=http%3A%2F%2Fnew.example.com
-    curl -i -X DELETE https://handleAdmin:somethingSuperSecret@your.service.edu/handle-service/2286/test:1
+You can also simply use cURL. See the examples above.
 
 <a name="limits" />
 Limitations and Potential To-dos

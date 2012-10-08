@@ -31,7 +31,7 @@ public class UserTest {
     @Test
     public void testAuthorization() {
     	String prefix = "0000.0";
-    	String suffix = "foo:bar";
+    	String suffix = "foo.bar";
     	
     	User admin = new User("test", "fake", true, true, 
     						  new ArrayList<String>(), new ArrayList<String>());
