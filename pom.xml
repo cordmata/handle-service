@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>edu.asu.lib</groupId>
     <artifactId>handle-service</artifactId>
-    <version>0.5</version>
+    <version>0.6</version>
     <packaging>war</packaging>
     <name>CNRI Handle Server Web API</name>
     <description>Exposes a web API for creating, updating, and deleting Handles.</description>
@@ -13,16 +13,6 @@
 	    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
-    <repositories>
-        <repository>
-            <id>ASU-LIB-MVN</id>
-            <name>ASU Library's Maven Repository</name>
-            <url>http://maven.lib.asu.edu/maven/</url>
-            <releases>
-                <checksumPolicy>warn</checksumPolicy>
-            </releases>
-        </repository>
-    </repositories>
     <dependencies>
         <dependency>
             <groupId>junit</groupId>
@@ -60,7 +50,7 @@
 		    <groupId>org.springframework.security</groupId>
 		    <artifactId>spring-security-web</artifactId>
 		    <version>${spring.security.version}</version>
-		</dependency> 
+		</dependency>
 		<dependency>
 		    <groupId>org.springframework.security</groupId>
 		    <artifactId>spring-security-config</artifactId>
@@ -74,7 +64,9 @@
         <dependency>
             <groupId>net.handle</groupId>
             <artifactId>handle</artifactId>
-            <version>7.1</version>
+            <version>7.3.1</version>
+            <scope>system</scope>
+            <systemPath>${basedir}/lib/handle-client-7.3.1.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>
