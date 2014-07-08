@@ -65,8 +65,6 @@
             <groupId>net.handle</groupId>
             <artifactId>handle</artifactId>
             <version>7.3.1</version>
-            <scope>system</scope>
-            <systemPath>${basedir}/lib/handle-client-7.3.1.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>
@@ -171,6 +169,29 @@
             </plugins>
         </pluginManagement>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-install-plugin</artifactId>
+                <version>2.5.1</version>
+                <executions>
+                    <execution>
+                        <id>install-handle-client</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>install-file</goal>
+                        </goals>
+                        <configuration>
+                            <file>${basedir}/lib/handle-client-7.3.1.jar</file>
+                            <groupId>net.handle</groupId>
+                            <artifactId>handle</artifactId>
+                            <version>7.3.1</version>
+                            <packaging>jar</packaging>
+                            <createChecksum>true</createChecksum>
+                            <generatePom>true</generatePom>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
            <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>

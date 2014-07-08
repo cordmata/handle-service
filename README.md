@@ -56,6 +56,7 @@ admin user.
 
 You will need [Maven](http://maven.apache.org/) to build the WAR:
 
+	mvn -Pprod validate
 	mvn -Pprod package
 
 Then simply deploy the WAR to a Servlet container of your choice.
@@ -130,12 +131,12 @@ Return the target of the supplied handle in the "location" header.
 
 #### Success Response Code:
 
-* **204 No Content:** The target URL of the supplied handle will be in the "location" header. 
+* **204 No Content:** The target URL of the supplied handle will be in the "location" header.
 
 #### Error Response Codes:
 
 * **400 Bad Request:** Handle was not supplied or the supplied target is a Malformed URI.
-* **404 Not Found:** The supplied URL Handle was not found. This will also be returned if 
+* **404 Not Found:** The supplied URL Handle was not found. This will also be returned if
 the handle is an Admin or Email handle.
 * **401 Unauthorized:** Authentication failure.
 
@@ -197,7 +198,7 @@ global handle proxy URL will be returned in the "location" header.
 
 #### Query Parameters:
 
-* **target:**  *Required*, valid URI 
+* **target:**  *Required*, valid URI
 
 #### Success Response Codes:
 
