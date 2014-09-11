@@ -43,7 +43,7 @@ http://cxf.apache.org/schemas/jaxrs.xsd">
         <property name="handleClient" ref="handleClient" />
     </bean>
 
-    <jaxrs:server id="handleServiceServer" address="/">
+    <jaxrs:server id="handleServiceServer" address="/handle-service">
         <jaxrs:serviceBeans>
             <ref bean="handleService" />
         </jaxrs:serviceBeans>
